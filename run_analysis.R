@@ -51,4 +51,4 @@ groupedData<-group_by(meanAndStd_wAct,activity,subject)
 groupedData<-summarise_each(groupedData,funs(mean))
 groupedData<-arrange(groupedData,activity,subject)
 write.csv(groupedData,file="groupedData.csv")
-
+write.table(groupedData,file="groupedData.txt",row.name=FALSE)
