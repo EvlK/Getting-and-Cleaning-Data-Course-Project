@@ -20,12 +20,10 @@ The following files are available for the train and test data. Their description
 window sample. Its range is from 1 to 30. 
 
 The following steps were taken to derive the final data set:
-1.	The training and the test were added activity code and subject.
-2.	The training and test data sets were merged into one
-3.	Activity codes were replaced by activity labels
-4.	Feature columns were renamed to contain measurement names
-5.	Only columns that contain measurements of mean and standard deviation left in the data set
-6.	Data was grouped by activity and subject and final independent tidy data set created providing with the average of each variable for each activity and each subject.
+1.	The training and test data sets were merged into one
+2.	Only variables measuting mean and standard deviation were left, the others removed
+3/4.	Variable columns were renamed to contain measurement names and activity names added to the data
+5.	Data was grouped by activity and subject and final independent tidy data set created providing with the average of each variable for each activity and each subject.
 
 The code to transform the data is provided in file run_analysis.R
 
