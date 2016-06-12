@@ -1,97 +1,54 @@
-#---------ASSUMPTIONS-------------------------------------------------
-#--1. The code assumes that data is presented in the same folder
-#structure as extrated from "getdata-projectfiles-UCI HAR Dataset.zip"
-#archive (folder "UCI HAR Dataset")
-#--2. The data ("UCI HAR Dataset") is in your working directory
-#--3. User has uploaded "dplyr" package
+#The function:
+#1.Merges the training and the test sets to create one data set.
+#2.Extracts only the measurements on the mean and standard
+#deviation for each measurement.
+#3.Uses descriptive activity names to name the activities in the data set
+#4.Appropriately labels the data set with descriptive variable names.
+#5.From the data set in step 4, creates a second, independent tidy data set with the average of each variable for each activity and each subject.rary(dplyr)
 
-#call dplyr package
-library(dplyr)
+#---1---
+#read test, activity and subject datasets
+#and combine data into 1 data set
+x_test<-tbl_df(read.table("test/X_test.txt"))
+y_test<-tbl_df(read.table("test/y_test.txt"))
+subject_test<-tbl_df(read.table("test/subject_test.txt"))
+testData<-bind_cols(subject_test,y_test,x_test)
 
-#-----read TEST data sets--------
-#read X_test.txt file - the data
-x_test<-read.table("UCI HAR Dataset/test/X_test.txt")
+#read train, activity and subject datasets
+#and combine data into 1 data set
+x_train<-tbl_df(read.table("train/X_train.txt"))
+y_train<-tbl_df(read.table("train/y_train.txt"))
+subject_train<-tbl_df(read.table("train/subject_train.txt"))
+trainData<-bind_cols(subject_train,y_train,x_train)
 
-#read y_test.txt file - the activity codes and rename the column
-#to "activity"
-y_test<-read.table("UCI HAR Dataset/test/y_test.txt")
-colnames(y_test)<-"activity"
-
-#read subject_test.txt file - subject information and rename the
-#column to "subject"
-subject_test<-read.table("UCI HAR Dataset/test/subject_test.txt")
-names(subject_test)<-"subject"
-
-#bring 3 data sets above into 1 data set
-testData<-cbind(y_test,subject_test,x_test)
-
-
-#-----read TRAIN data sets-----
-#read X_train.txt file - the data
-x_train<-read.table("UCI HAR Dataset/train/X_train.txt")
-
-#read y_train.txt file - the activity codes and rename the column
-#to "activity"
-y_train<-read.table("UCI HAR Dataset/train/y_train.txt")
-colnames(y_train)<-"activity"
-
-#read subject_train.txt file - subject information and rename the
-#column to "subject"
-subject_train<-read.table("UCI HAR Dataset/train/subject_train.txt")
-colnames(subject_train)<-"subject"
-
-#bring 3 data sets above into 1 data set
-trainData<-cbind(y_train,subject_train,x_train)
-
-#-----merge TEST and TRAIN data sets into one-----
+#merge test and train datasets into one
 completeData<-rbind(testData,trainData)
 
-#-----replace activity codes with activity names
-#read the activity_labels.txt file
-actLabels<-read.table("UCI HAR Dataset/activity_labels.txt")
-#a function to lookup values from a table
-vLookup<-function(lookupValue,lookupArray,returnColumn){
-      for(i in 1:nrow(lookupArray)){
-            if(lookupValue==lookupArray[i,1]){
-                  return(as.character(lookupArray[i,returnColumn]))
-            }
-      }
-}
-#replace activity code into activity labels using defined vlookup function
-for(i in 1:nrow(completeData)) {
-      completeData[i,1]<-vLookup(completeData[i,1],actLabels,2)
-}
+#---2---
+#leave only those variables
+#that measure mean and std
+features<-read.table("features.txt")
+col_names<-as.character(features[,2])
+col_names<-c("subject","activity_code",col_names)
+leaveColumns<-grepl("subject|activity_code|mean()|std()",col_names)
+meanAndStd<-completeData[,leaveColumns]
 
-#-----add descriptive variable names------------
-#read the list of features from file "features.txt"
-features<-read.table("UCI HAR Dataset/features.txt")
-#update variable column names in complete data with feature names
-colnames(completeData)[3:563]<-as.character(features[,2])
+#---3&4---
+#replace activity codes with activity names and
+#add descriptive variable names
+col_names<-col_names[leaveColumns]
+colnames(meanAndStd)<-col_names
+activities<-read.table("activity_labels.txt")
+colnames(activities)<-c("code","activity")
+meanAndStd_wAct<-left_join(meanAndStd,activities,by=c("activity_code"="code"))
+meanAndStd_wAct<-meanAndStd_wAct[,c(1,82,3:81)]
+write.csv(meanAndStd_wAct,file="meanAndStd_wAct.csv")
 
-#-----leave only columns that measure mean and standard deviation--------
-#get logical and numerical vectors of columns that contain mean() or std()
-containsMean<-grepl("mean()",colnames(completeData[3:363]))
-containsStDev<-grepl("std()",colnames(completeData[3:363]))
-#construct one logical vector of columns to keep
-containsEither<-as.logical(containsMean+containsStDev)
-#construct numerical vector with column numbers to leave
-keepColumns<-c()
-for(i in 1:361) {
-      if(containsEither[i]) keepColumns<-(c(keepColumns,i))    
-}
-#offset keepColumns by 2 - we are keeping first 2 columns (activity &
-#subject) as they are in the data
-keepColumns<-keepColumns+2
-#create a new data set that contains only "keepColumns" and excludes the rest
-meanAndStdData<-completeData[,c(1:2,keepColumns)]
-
-#-----creates an independent tidy data set with the average of each variable
-#-----for each activity and each subject------------------------------------
-#group data by activity and subject
-groupedData<-group_by(meanAndStdData,activity,subject)
-#calculate means for each measurement column for groups
-finalData<-summarise_each(groupedData,funs(mean))
-#output the final data into working directory
-write.table(finalData,file="FinalData.txt",row.name=FALSE)
-
+#---5---
+#Ouput grouped data with calculated average for each variable for each
+#activity and each subject
+groupedData<-group_by(meanAndStd_wAct,activity,subject)
+groupedData<-summarise_each(groupedData,funs(mean))
+groupedData<-arrange(groupedData,activity,subject)
+write.csv(groupedData,file="groupedData.csv")
 
