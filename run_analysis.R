@@ -42,7 +42,7 @@ activities<-read.table("activity_labels.txt")
 colnames(activities)<-c("code","activity")
 meanAndStd_wAct<-left_join(meanAndStd,activities,by=c("activity_code"="code"))
 meanAndStd_wAct<-meanAndStd_wAct[,c(1,82,3:81)]
-write.csv(meanAndStd_wAct,file="meanAndStd_wAct.csv")
+##write.csv(meanAndStd_wAct,file="meanAndStd_wAct.csv")
 
 #---5---
 #Ouput grouped data with calculated average for each variable for each
@@ -50,5 +50,5 @@ write.csv(meanAndStd_wAct,file="meanAndStd_wAct.csv")
 groupedData<-group_by(meanAndStd_wAct,activity,subject)
 groupedData<-summarise_each(groupedData,funs(mean))
 groupedData<-arrange(groupedData,activity,subject)
-write.csv(groupedData,file="groupedData.csv")
+##write.csv(groupedData,file="groupedData.csv")
 write.table(groupedData,file="groupedData.txt",row.name=FALSE)
